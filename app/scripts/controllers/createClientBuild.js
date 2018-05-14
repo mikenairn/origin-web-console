@@ -59,7 +59,7 @@ angular.module('openshiftConsole')
     var secretsVersion = APIService.getPreferredVersion('secrets');
 
     var secretName = function(clientConfig) {
-      return [clientConfig.clientType, clientConfig.buildType, clientConfig.clientBuildName].join('-');
+      return [clientConfig.clientType, clientConfig.buildType, clientConfig.buildName].join('-');
     };
 
     var createBuildConfig = function(clientConfig, secret) {
