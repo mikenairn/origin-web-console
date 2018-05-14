@@ -34,11 +34,33 @@ angular.module('openshiftConsole')
     ];
 
     $scope.newClientBuild = {
-      authType: 'kubernetes.io/basic-auth'
+      authType: 'kubernetes.io/basic-auth',
+      clientType: "android",
+      buildType: "debug"
+    };
+    
+    $scope.buildTypeMap = {
+      android: {
+        label: "Android",
+        buildTypes: [
+          {
+            id: "debug",
+            label: "Debug"
+          },
+          {
+            id: "release",
+            label: "Release"
+          }
+        ]
+      }
     };
 
     var buildConfigsVersion = APIService.getPreferredVersion('buildconfigs');
     var secretsVersion = APIService.getPreferredVersion('secrets');
+
+    var secretName = function(clientConfig) {
+      return [clientConfig.clientType, clientConfig.buildType, clientConfig.clientBuildName].join('-');
+    };
 
     var createBuildConfig = function(clientConfig, secret) {
       var buildConfig = {
@@ -50,25 +72,32 @@ angular.module('openshiftConsole')
         spec: {
           source: {
             git: {
-              uri: clientConfig.gitUri,
-              ref: clientConfig.gitRef,
+              uri: clientConfig.gitRepoUri,
+              ref: clientConfig.gitRepoBranch
             }
           },
           strategy: {
             jenkinsPipelineStrategy: {
-              jenkinsfilePath: clientConfig.jenkinsFilePath,
-              env: [{
-                name: 'FH_CONFIG_CONTENT',
-                value: 'cantbeempty'
-              },
-              {
-                name: 'BUILD_CONFIG',
-                value: 'debug'
-              }]
+              jenkinsfilePath: clientConfig.jenkinsfilePath,
+              env: [
+                {
+                  name: "FH_CONFIG_CONTENT",
+                  value: "cantbeempty"
+                },
+                {
+                  name: "BUILD_CONFIG",
+                  value: clientConfig.buildType
+                }
+              ]
             }
           }
         }
       };
+
+      if(clientConfig.buildType === 'release') {
+        buildConfig.spec.strategy.jenkinsPipelineStrategy.env.push({name: "BUILD_CREDENTIAL_ID", value: $scope.projectName + '-' + secretName(clientConfig)});
+        buildConfig.spec.strategy.jenkinsPipelineStrategy.env.push({name: "BUILD_CREDENTIAL_ALIAS", value: clientConfig.androidKeyStoreKeyAlias});
+      }
 
       if (secret) {
         buildConfig.spec.source.sourceSecret = {
@@ -123,6 +152,25 @@ angular.module('openshiftConsole')
       return secret;
     };
 
+    var createAndroidKeyStoreSecret = function(clientConfig) {
+      return {
+        apiVersion: APIService.toAPIVersion(secretsVersion),
+        kind: "Secret",
+        metadata: {
+          name: secretName(clientConfig),
+          labels:  {
+            "mobile-client-build": "true",
+            "credential.sync.jenkins.openshift.io": "true"
+          }
+        },
+        type: "Opaque",
+        stringData: {
+          certificate: clientConfig.androidKeyStore,
+          password: clientConfig.androidKeyStorePassword
+        }
+      };
+    };
+
     ProjectsService
       .get($routeParams.project)
       .then(_.spread(function(project, context) {
@@ -156,6 +204,18 @@ angular.module('openshiftConsole')
 
     $scope.createClientBuild = function() {
       console.log($scope.newClientBuild);
+
+      if ($scope.newClientBuild.buildType === 'release') {
+        var certSecret = createAndroidKeyStoreSecret($scope.newClientBuild);
+        DataService.create(secretsVersion, null, certSecret, $scope.context)
+          .then(function() {
+            // $scope.navigateBack();
+          })
+          .catch(function(err) {
+            console.log(err);
+          });
+      }
+      
       if (!$scope.newClientBuild.isPrivateRepo) {
         var clientBuildConfig = createBuildConfig($scope.newClientBuild);
         DataService.create(buildConfigsVersion, null, clientBuildConfig, $scope.context)

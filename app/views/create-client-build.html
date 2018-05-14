@@ -207,6 +207,40 @@
                       </div>
                     </div>
                   </dl>
+                <div class="form-group">
+                    <label for="build-type">Build Type</label>
+                    <ui-select required input-id="build-type" ng-model="newClientBuild.buildType" search-enabled="false">
+                        <ui-select-match>{{$select.selected.label}}</ui-select-match>
+                        <ui-select-choices repeat="type.id as type in buildTypeMap[newClientBuild.clientType].buildTypes">
+                            {{type.label}}
+                        </ui-select-choices>
+                    </ui-select>
+                </div>
+
+                <div ng-if="newClientBuild.clientType === 'android'">
+                  <div ng-if="newClientBuild.buildType === 'release'">
+                    <div class="form-group" id="android-credentials">
+                      <label class="required" for="android-keystore">Android KeyStore</label>
+                      <osc-file-input
+                          id="android-keystore"
+                          model="newClientBuild.androidKeyStore"
+                          help-text="Password protected PKCS12 file containing a key protected by the same password"
+                          read-as-binary-string="true"
+                          required="true"></osc-file-input>
+
+                      <label for="android-keystore-password">KeyStore Password</label>
+                      <input class="form-control" id="android-keystore-password" name="android-keystore-password" ng-model="newClientBuild.androidKeyStorePassword" type="password">
+                      <div class="help-block">
+                        Password for the PKCS12 archive and key
+                      </div>
+
+                      <label for="android-keystore-alias">KeyStore Alias</label>
+                      <input class="form-control" id="android-keystore-key-alias" name="android-keystore-alias" ng-model="newClientBuild.androidKeyStoreKeyAlias" type="password">
+                      <div class="help-block">
+                        The entry name of the private key/certificate chain you want to use to sign your APK(s). This entry must exist in the key store uploaded. If your key store contains only one key entry, which is the most common case, you can leave this field blank.
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div class="buttons gutter-top-bottom">
