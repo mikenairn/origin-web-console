@@ -72,8 +72,8 @@ angular.module('openshiftConsole')
         spec: {
           source: {
             git: {
-              uri: clientConfig.gitRepoUri,
-              ref: clientConfig.gitRepoBranch
+              uri: clientConfig.gitUri,
+              ref: clientConfig.gitRef
             }
           },
           strategy: {
