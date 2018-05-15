@@ -83,7 +83,7 @@ angular.module('openshiftConsole')
         kind: 'BuildConfig',
         apiVersion: APIService.toAPIVersion(buildConfigsVersion),
         metadata: {
-          generateName: clientConfig.buildName + '-'
+          name: clientConfig.buildName
         },
         spec: {
           source: {
@@ -111,23 +111,13 @@ angular.module('openshiftConsole')
       };
 
       if(clientConfig.buildType === 'release') {
-        // var credentialsIdEnv = {
-        //   name: 'BUILD_CREDENTIAL_ID',
-        //   value: secret.metadata.namespace + '-' + secret.metadata.name
-        // };
-        // var credentialsAliasEnv = {
-        //   name: 'BUILD_CREDENTIAL_ALIAS',
-        //   value: 'cantbeempty'
-        // };
-        // buildConfig.spec.strategy.jenkinsPipelineStrategy.env.push(credentialsIdEnv);
-        // buildConfig.spec.strategy.jenkinsPipelineStrategy.env.push(credentialsAliasEnv);
         buildConfig.spec.strategy.jenkinsPipelineStrategy.env.push({name: 'BUILD_CREDENTIAL_ID', value: $scope.projectName + '-' + secretName(clientConfig)});
         buildConfig.spec.strategy.jenkinsPipelineStrategy.env.push({name: 'BUILD_CREDENTIAL_ALIAS', value: clientConfig.androidKeyStoreKeyAlias});
       }
 
-      if (secret) {
+      if (clientConfig.authType !== 'public') {
         buildConfig.spec.source.sourceSecret = {
-          name: secret.metadata.name
+          name: clientConfig.credentialsName
         };
       }
 
@@ -139,7 +129,7 @@ angular.module('openshiftConsole')
         apiVersion: APIService.toAPIVersion(secretsVersion),
         kind: 'Secret',
         metadata: {
-          generateName: clientConfig.credentialsName + '-',
+          name: clientConfig.credentialsName,
         },
         type: clientConfig.authType,
         stringData: {}
@@ -231,7 +221,7 @@ angular.module('openshiftConsole')
         DataService.create(secretsVersion, null, secret, $scope.context)
           .then(function(secret) {
             var secretclientBuildConfig = createBuildConfig($scope.newClientBuild, secret);
-            return DataService.create(buildConfigsVersion, null, secretclientBuildConfig, $scope.context)
+            return DataService.create(buildConfigsVersion, null, secretclientBuildConfig, $scope.context);
           })
           .then(function() {
             $scope.navigateBack();
