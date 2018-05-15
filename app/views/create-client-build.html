@@ -12,9 +12,39 @@
               <div class="help-block">
                 Client Build allows you to create a mobile client binary from a git source repository.
               </div>
-              <ng-form name="clientBuildForm" class="create-secret-form">
+              <ng-form name="clientBuildForm" class="create-secret-form edit-form">
+              <div class="section">
+                <dl class="dl-horizontal left">
+                  <div>
+                    <div class="row">
+                      <div class="form-group col-lg-12">
+                        <label for="clientBuildname" class="required">Name</label>
+
+                        <div ng-class="{
+                                'has-error': clientBuildForm.clientBuildname.$touched && clientBuildForm.clientBuildname.$error.required
+                              }">
+                          <input class="form-control"
+                                 id="clientBuildname"
+                                 name="clientBuildname"
+                                 type="text"
+                                 ng-model="newClientBuild.buildName"
+                                 autocorrect="off"
+                                 autocapitalize="none"
+                                 spellcheck="false"
+                                 required>
+                        </div>
+                        <div class="has-error"
+                             ng-if="clientBuildForm.clientBuildname.$touched && clientBuildForm.clientBuildname.$error.required">
+                          <span class="help-block">A name is required.</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </dl>
+              </div>
+
                 <div class="section">
-                  <h3>Source Configuration</h3>
+                <h3 class="with-divider">Source Configuration</h3>
                   <dl class="dl-horizontal left">
                     <div>
                       <div class="row">
@@ -217,7 +247,7 @@
                 </div>
 
                 <div class="section">
-                  <h3>Android Credentials</h3>
+                  <h3 class="with-divider">Build Configuration</h3>
                   <dl class="dl-horizontal left">
                     <div class="form-group">
                         <label for="build-type">Build Type</label>
