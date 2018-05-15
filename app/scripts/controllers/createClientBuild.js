@@ -83,7 +83,10 @@ angular.module('openshiftConsole')
         kind: 'BuildConfig',
         apiVersion: APIService.toAPIVersion(buildConfigsVersion),
         metadata: {
-          name: clientConfig.buildName
+          name: clientConfig.buildName,
+          labels:  {
+            'mobile-client-build': 'true'
+          }
         },
         spec: {
           source: {
@@ -130,6 +133,9 @@ angular.module('openshiftConsole')
         kind: 'Secret',
         metadata: {
           name: clientConfig.credentialsName,
+          labels:  {
+            'mobile-client-build': 'true'
+          }
         },
         type: clientConfig.authType,
         stringData: {}
@@ -154,7 +160,7 @@ angular.module('openshiftConsole')
     };
 
     var createAndroidKeyStoreSecret = function(clientConfig) {
-      return {
+      var secret = {
         apiVersion: APIService.toAPIVersion(secretsVersion),
         kind: 'Secret',
         metadata: {
@@ -165,11 +171,17 @@ angular.module('openshiftConsole')
           }
         },
         type: 'Opaque',
-        stringData: {
-          certificate: clientConfig.androidKeyStore,
-          password: clientConfig.androidKeyStorePassword
-        }
+        stringData: {}
       };
+
+      var secretData =  {
+        certificate: clientConfig.androidKeyStore,
+        password: clientConfig.androidKeyStorePassword
+      };
+      // Base64 encode the values.
+      secret.data = _.mapValues(secretData, window.btoa);
+
+      return secret;
     };
 
     ProjectsService
