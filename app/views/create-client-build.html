@@ -13,18 +13,16 @@
                 Client Build allows you to create a mobile client binary from a git source repository.
               </div>
               <ng-form name="clientBuildForm" class="create-secret-form">
-                <div lass="section">
+                <div class="section">
                   <h3>Source Configuration</h3>
                   <dl class="dl-horizontal left">
                     <div>
                       <div class="row">
-                        <div ng-class="{
-                          'col-lg-8': advancedOptions,
-                          'col-lg-12': !advancedOptions}">
-
-                        <div class="form-group">
-                          <label for="clientBuildname">Name</label>
-                          <div>
+                        <div class="form-group col-lg-12">
+                          <label for="clientBuildname" class="required">Name</label>
+                          <div ng-class="{
+                              'has-error': clientBuildForm.clientBuildname.$touched && clientBuildForm.clientBuildname.$error.required
+                            }">
                             <input class="form-control"
                               id="clientBuildname"
                               name="clientBuildname"
@@ -32,9 +30,16 @@
                               ng-model="newClientBuild.buildName"
                               autocorrect="off"
                               autocapitalize="none"
-                              spellcheck="false">
+                              spellcheck="false"
+                              required>
+                          </div>
+                          <div class="has-error" ng-if="clientBuildForm.clientBuildname.$touched && clientBuildForm.clientBuildname.$error.required">
+                            <span class="help-block">A name is required.</span>
                           </div>
                         </div>
+                        <div ng-class="{
+                          'col-lg-8': advancedOptions,
+                          'col-lg-12': !advancedOptions}">
 
                           <div class="form-group">
                             <label for="sourceUrl" class="required">Git Repository URL</label>
@@ -105,31 +110,7 @@
                           <div class="help-block" id="context-dir-help">Location of the JenkinsFile in the repository.</div>
                         </div>
 
-
                         <div class="form-group">
-                          <div class="checkbox">
-                            <label>
-                              <input type="checkbox" ng-model="newClientBuild.isPrivateRepo">
-                              Private Git repository?
-                            </label>
-                          </div>
-                        </div>
-                        <div class="form-group" ng-if="newClientBuild.isPrivateRepo">
-
-                        <div class="form-group">
-                          <label for="credentialsName">Credentials Name</label>
-                          <div>
-                            <input class="form-control"
-                              id="credentialsName"
-                              name="credentialsName"
-                              type="text"
-                              ng-model="newClientBuild.credentialsName"
-                              autocorrect="off"
-                              autocapitalize="none"
-                              spellcheck="false">
-                          </div>
-                        </div>
-
                           <div>
                             <div class="form-group">
                               <label for="authentification-type">Authentication Type</label>
@@ -141,25 +122,49 @@
                               </ui-select>
                             </div>
 
-                            <div ng-if="newClientBuild.authType === 'kubernetes.io/basic-auth'">
-                              <div class="form-group">
-                                <label for="username">Username</label>
+                            <div ng-if="newClientBuild.authType !== 'public'" class="form-group" ng-class="{ 'has-error' : clientBuildForm.credentialsName.$invalid && clientBuildForm.credentialsName.$touched }">
+                              <label for="credentialsName" class="required">Name</label>
+                              <div>
                                 <input class="form-control"
-                                  id="username"
-                                  name="username"
-                                  ng-model="newClientBuild.username"
+                                  id="credentialsName"
+                                  name="credentialsName"
                                   type="text"
+                                  ng-model="newClientBuild.credentialsName"
                                   autocorrect="off"
                                   autocapitalize="none"
                                   spellcheck="false"
-                                  aria-describedby="username-help">
+                                  required>
+                              </div>
+                              <div class="has-error" ng-if="clientBuildForm.credentialsName.$touched && clientBuildForm.credentialsName.$error.required">
+                                <span class="help-block">A name for the credentials is required.</span>
+                              </div>
+                            </div>
+
+                            <div ng-if="newClientBuild.authType === 'kubernetes.io/basic-auth'">
+                              <div class="form-group">
+                                <label for="username" class="required">Username</label>
+                                <div ng-class="{ 'has-error' : clientBuildForm.username.$invalid && clientBuildForm.username.$touched }">
+                                  <input class="form-control"
+                                    id="username"
+                                    name="username"
+                                    ng-model="newClientBuild.username"
+                                    type="text"
+                                    autocorrect="off"
+                                    autocapitalize="none"
+                                    spellcheck="false"
+                                    aria-describedby="username-help"
+                                    required>
+                                </div>
                                 <div class="help-block" id="username-help">
-                                  Optional username for Git authentication.
+                                  Username for Git authentication.
+                                </div>
+                                <div class="has-error" ng-if="clientBuildForm.username.$touched && clientBuildForm.username.$error.required">
+                                  <span class="help-block">A username is required.</span>
                                 </div>
                               </div>
 
                               <div class="form-group" ng-class="{ 'has-error' : clientBuildForm.passwordToken.$invalid && clientBuildForm.passwordToken.$touched }">
-                                <label ng-class="{ required: !add.cacert && !add.gitconfig }" for="password-token">Password or Token</label>
+                                <label class="required" for="password-token">Password or Token</label>
                                 <input class="form-control"
                                   id="password-token"
                                   name="passwordToken"
@@ -169,7 +174,7 @@
                                   spellcheck="false"
                                   aria-describedby="password-token-help"
                                   type="password"
-                                  ng-required="!add.cacert && !add.gitconfig">
+                                  required>
                               </div>
                               <div class="has-error" ng-show="newClientBuild.passwordToken.$error.required && clientBuildForm.passwordToken.$touched">
                                 <div class="help-block">
@@ -179,6 +184,9 @@
                               <div class="help-block" id="password-token-help">
                                 Password or token for Git authentication.
                               </div>
+                                <div class="has-error" ng-if="clientBuildForm.passwordToken.$touched && clientBuildForm.passwordToken.$error.required">
+                                  <span class="help-block">A Password or token is required.</span>
+                                </div>
                             </div>
 
                             <div ng-if="newClientBuild.authType === 'kubernetes.io/ssh-auth'">
@@ -202,46 +210,53 @@
                               </div>
                             </div>
 
-
                         </div>
                       </div>
                     </div>
                   </dl>
-                <div class="form-group">
-                    <label for="build-type">Build Type</label>
-                    <ui-select required input-id="build-type" ng-model="newClientBuild.buildType" search-enabled="false">
-                        <ui-select-match>{{$select.selected.label}}</ui-select-match>
-                        <ui-select-choices repeat="type.id as type in buildTypeMap[newClientBuild.clientType].buildTypes">
-                            {{type.label}}
-                        </ui-select-choices>
-                    </ui-select>
                 </div>
 
-                <div ng-if="newClientBuild.clientType === 'android'">
-                  <div ng-if="newClientBuild.buildType === 'release'">
-                    <div class="form-group" id="android-credentials">
-                      <label class="required" for="android-keystore">Android KeyStore</label>
-                      <osc-file-input
-                          id="android-keystore"
-                          model="newClientBuild.androidKeyStore"
-                          help-text="Password protected PKCS12 file containing a key protected by the same password"
-                          read-as-binary-string="true"
-                          required="true"></osc-file-input>
+                <div class="section">
+                  <!--  Is this terminology correct? -->
+                  <h3>Android Credentials</h3>
+                  <dl class="dl-horizontal left">
+                    <div class="form-group">
+                        <label for="build-type">Build Type</label>
+                        <ui-select required input-id="build-type" ng-model="newClientBuild.buildType" search-enabled="false">
+                            <ui-select-match>{{$select.selected.label}}</ui-select-match>
+                            <ui-select-choices repeat="type.id as type in buildTypeMap[newClientBuild.clientType].buildTypes">
+                                {{type.label}}
+                            </ui-select-choices>
+                        </ui-select>
+                    </div>
 
-                      <label for="android-keystore-password">KeyStore Password</label>
-                      <input class="form-control" id="android-keystore-password" name="android-keystore-password" ng-model="newClientBuild.androidKeyStorePassword" type="password">
-                      <div class="help-block">
-                        Password for the PKCS12 archive and key
-                      </div>
+                    <div ng-if="newClientBuild.clientType === 'android'">
+                      <div ng-if="newClientBuild.buildType === 'release'">
+                        <div class="form-group" id="android-credentials">
+                          <label class="required" for="android-keystore">Android KeyStore</label>
+                          <osc-file-input
+                              id="android-keystore"
+                              model="newClientBuild.androidKeyStore"
+                              help-text="Password protected PKCS12 file containing a key protected by the same password"
+                              read-as-binary-string="true"
+                              required="true"></osc-file-input>
 
-                      <label for="android-keystore-alias">KeyStore Alias</label>
-                      <input class="form-control" id="android-keystore-key-alias" name="android-keystore-alias" ng-model="newClientBuild.androidKeyStoreKeyAlias" type="password">
-                      <div class="help-block">
-                        The entry name of the private key/certificate chain you want to use to sign your APK(s). This entry must exist in the key store uploaded. If your key store contains only one key entry, which is the most common case, you can leave this field blank.
+                          <label for="android-keystore-password">KeyStore Password</label>
+                          <input class="form-control" id="android-keystore-password" name="android-keystore-password" ng-model="newClientBuild.androidKeyStorePassword" type="password">
+                          <div class="help-block">
+                            Password for the PKCS12 archive and key
+                          </div>
+
+                          <label for="android-keystore-alias">KeyStore Alias</label>
+                          <input class="form-control" id="android-keystore-key-alias" name="android-keystore-alias" ng-model="newClientBuild.androidKeyStoreKeyAlias" type="password">
+                          <div class="help-block">
+                            The entry name of the private key/certificate chain you want to use to sign your APK(s). This entry must exist in the key store uploaded. If your key store contains only one key entry, which is the most common case, you can leave this field blank.
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </div>
+                  </dl>
+                <div>
 
                 <div class="buttons gutter-top-bottom">
                   <button class="btn btn-primary"

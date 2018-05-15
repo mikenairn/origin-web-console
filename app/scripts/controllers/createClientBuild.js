@@ -19,6 +19,10 @@ angular.module('openshiftConsole')
     ProjectsService,
     SOURCE_URL_PATTERN
   ) {
+
+    var buildConfigsVersion = APIService.getPreferredVersion('buildconfigs');
+    var secretsVersion = APIService.getPreferredVersion('secrets');
+
     $scope.alerts = {};
     $scope.projectName = $routeParams.project;
     $scope.sourceURLPattern = SOURCE_URL_PATTERN;
@@ -34,29 +38,41 @@ angular.module('openshiftConsole')
     ];
 
     $scope.newClientBuild = {
-      authType: 'kubernetes.io/basic-auth',
-      clientType: "android",
-      buildType: "debug"
+      authType: 'public',
+      clientType: 'android',
+      buildType: 'debug'
     };
     
     $scope.buildTypeMap = {
       android: {
-        label: "Android",
+        label: 'Android',
         buildTypes: [
           {
-            id: "debug",
-            label: "Debug"
+            id: 'debug',
+            label: 'Debug'
           },
           {
-            id: "release",
-            label: "Release"
+            id: 'release',
+            label: 'Release'
           }
         ]
       }
     };
 
-    var buildConfigsVersion = APIService.getPreferredVersion('buildconfigs');
-    var secretsVersion = APIService.getPreferredVersion('secrets');
+    $scope.authTypes = [
+      {
+        id: 'public',
+        label: 'Public'
+      },
+      {
+        id: 'kubernetes.io/basic-auth',
+        label: 'Basic Authentication'
+      },
+      {
+        id: 'kubernetes.io/ssh-auth',
+        label: 'SSH Key'
+      }
+    ];
 
     var secretName = function(clientConfig) {
       return [clientConfig.clientType, clientConfig.buildType, clientConfig.buildName].join('-');
@@ -81,11 +97,11 @@ angular.module('openshiftConsole')
               jenkinsfilePath: clientConfig.jenkinsfilePath,
               env: [
                 {
-                  name: "FH_CONFIG_CONTENT",
-                  value: "cantbeempty"
+                  name: 'FH_CONFIG_CONTENT',
+                  value: 'value'
                 },
                 {
-                  name: "BUILD_CONFIG",
+                  name: 'BUILD_CONFIG',
                   value: clientConfig.buildType
                 }
               ]
@@ -95,14 +111,6 @@ angular.module('openshiftConsole')
       };
 
       if(clientConfig.buildType === 'release') {
-        buildConfig.spec.strategy.jenkinsPipelineStrategy.env.push({name: "BUILD_CREDENTIAL_ID", value: $scope.projectName + '-' + secretName(clientConfig)});
-        buildConfig.spec.strategy.jenkinsPipelineStrategy.env.push({name: "BUILD_CREDENTIAL_ALIAS", value: clientConfig.androidKeyStoreKeyAlias});
-      }
-
-      if (secret) {
-        buildConfig.spec.source.sourceSecret = {
-          name: secret.metadata.name
-        };
         // var credentialsIdEnv = {
         //   name: 'BUILD_CREDENTIAL_ID',
         //   value: secret.metadata.namespace + '-' + secret.metadata.name
@@ -113,6 +121,14 @@ angular.module('openshiftConsole')
         // };
         // buildConfig.spec.strategy.jenkinsPipelineStrategy.env.push(credentialsIdEnv);
         // buildConfig.spec.strategy.jenkinsPipelineStrategy.env.push(credentialsAliasEnv);
+        buildConfig.spec.strategy.jenkinsPipelineStrategy.env.push({name: 'BUILD_CREDENTIAL_ID', value: $scope.projectName + '-' + secretName(clientConfig)});
+        buildConfig.spec.strategy.jenkinsPipelineStrategy.env.push({name: 'BUILD_CREDENTIAL_ALIAS', value: clientConfig.androidKeyStoreKeyAlias});
+      }
+
+      if (secret) {
+        buildConfig.spec.source.sourceSecret = {
+          name: secret.metadata.name
+        };
       }
 
       return buildConfig;
@@ -124,9 +140,6 @@ angular.module('openshiftConsole')
         kind: 'Secret',
         metadata: {
           generateName: clientConfig.credentialsName + '-',
-          labels: {
-            'credential.sync.jenkins.openshift.io': 'true'
-          }
         },
         type: clientConfig.authType,
         stringData: {}
@@ -134,8 +147,6 @@ angular.module('openshiftConsole')
 
       switch (clientConfig.authType) {
         case 'kubernetes.io/basic-auth':
-
-          // If the password/token is not entered either .gitconfig or ca.crt has to be provided
           if (clientConfig.passwordToken) {
             secret.stringData.password = clientConfig.passwordToken;
           } else {
@@ -155,15 +166,15 @@ angular.module('openshiftConsole')
     var createAndroidKeyStoreSecret = function(clientConfig) {
       return {
         apiVersion: APIService.toAPIVersion(secretsVersion),
-        kind: "Secret",
+        kind: 'Secret',
         metadata: {
           name: secretName(clientConfig),
           labels:  {
-            "mobile-client-build": "true",
-            "credential.sync.jenkins.openshift.io": "true"
+            'mobile-client-build': 'true',
+            'credential.sync.jenkins.openshift.io': 'true'
           }
         },
-        type: "Opaque",
+        type: 'Opaque',
         stringData: {
           certificate: clientConfig.androidKeyStore,
           password: clientConfig.androidKeyStorePassword
@@ -191,44 +202,31 @@ angular.module('openshiftConsole')
       $scope.advancedOptions = value;
     };
 
-    $scope.authTypes = [
-      {
-        id: 'kubernetes.io/basic-auth',
-        label: 'Basic Authentication'
-      },
-      {
-        id: 'kubernetes.io/ssh-auth',
-        label: 'SSH Key'
-      }
-    ];
-
     $scope.createClientBuild = function() {
-      console.log($scope.newClientBuild);
-
       if ($scope.newClientBuild.buildType === 'release') {
         var certSecret = createAndroidKeyStoreSecret($scope.newClientBuild);
         DataService.create(secretsVersion, null, certSecret, $scope.context)
           .then(function() {
-            // $scope.navigateBack();
+            $scope.navigateBack();
           })
           .catch(function(err) {
             console.log(err);
           });
       }
       
-      if (!$scope.newClientBuild.isPrivateRepo) {
+      if ($scope.newClientBuild.authType === 'public') {
         var clientBuildConfig = createBuildConfig($scope.newClientBuild);
         DataService.create(buildConfigsVersion, null, clientBuildConfig, $scope.context)
           .then(function() {
             console.log($scope.newClientBuild);
-            // $scope.navigateBack();
+            $scope.navigateBack();
           })
           .catch(function(err) {
             console.log(err);
           });
       }
 
-      if ($scope.newClientBuild.isPrivateRepo) {
+      if ($scope.newClientBuild.authType !== 'public') {
         var secret = createSecret($scope.newClientBuild);
         DataService.create(secretsVersion, null, secret, $scope.context)
           .then(function(secret) {
@@ -236,7 +234,7 @@ angular.module('openshiftConsole')
             return DataService.create(buildConfigsVersion, null, secretclientBuildConfig, $scope.context)
           })
           .then(function() {
-            // $scope.navigateBack();
+            $scope.navigateBack();
           })
           .catch(function(err) {
             console.log(err);
